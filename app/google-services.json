@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "183102849615",
+    "firebase_url": "https://warn-a-bruv-222623.firebaseio.com",
+    "project_id": "warn-a-bruv-222623",
+    "storage_bucket": "warn-a-bruv-222623.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183102849615:android:b130874e0dcad73b",
+        "android_client_info": {
+          "package_name": "com.example.mudu.warnabruv"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "183102849615-mhata2n8hdplqvmc5ffrh4sd3gd4533m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mudu.warnabruv",
+            "certificate_hash": "9b61b66fdbbd01d9e84eec675b18f10940fc17f2"
+          }
+        },
+        {
+          "client_id": "183102849615-eepseihem7prfgj8p9rfghbk3hhkf6ol.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGrZYxRCDKGEDkQ2TTzy9Icokyc7_nWjU"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "183102849615-eepseihem7prfgj8p9rfghbk3hhkf6ol.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
