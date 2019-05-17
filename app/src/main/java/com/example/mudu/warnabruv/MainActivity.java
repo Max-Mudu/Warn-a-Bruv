@@ -13,14 +13,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
-import com.example.mudu.warnabruv.model.FirebaseApplication;
-import com.example.mudu.warnabruv.model.FirebaseUserEntity;
-import com.example.mudu.warnabruv.model.Helper;
+
+import com.example.mudu.warnabruv.Firebase.FirebaseUserEntity;
+import com.example.mudu.warnabruv.Helper.Helper;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.rengwuxian.materialedittext.MaterialEditText;
@@ -34,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     Button btnSignIn, btnRegister;
     RelativeLayout rootLayout;
 
+    //Init Firebase
     FirebaseAuth auth;
     FirebaseAuth.AuthStateListener mAuthListener;
     FirebaseDatabase db;
@@ -53,34 +53,12 @@ public class MainActivity extends AppCompatActivity {
                 .build());
         setContentView(R.layout.activity_main);
 
-        //Init Firebase
-        auth = FirebaseAuth.getInstance();
-        if (auth.getCurrentUser() != null) {
-            Intent homeIntent = new Intent(MainActivity.this, Home.class);
-            startActivity(homeIntent);
-        }
-        mAuthListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                FirebaseUser user = firebaseAuth.getCurrentUser();
-                if (null != user) {
-                    Intent homeIntent = new Intent(MainActivity.this, Home.class);
-                    startActivity(homeIntent);
-                } else {
-                    Intent loginIntent = new Intent(MainActivity.this, MainActivity.class);
-                    startActivity(loginIntent);
-                }
-            }
-        };
+        //Check the current user
+        auth = ((FirebaseApplication)getApplication()).getFirebaseAuth();
+        ((FirebaseApplication)getApplication()).checkUserLogin(MainActivity.this);
+
         db = FirebaseDatabase.getInstance();
         users = db.getReference("Users");
-
-        /*Check the current user
-        if (auth.getCurrentUser() != null) {
-            startActivity(new Intent(MainActivity.this, Home.class));
-            finish();
-        }
-         */
 
         //Init view
         btnSignIn = findViewById(R.id.btnSignIn);
@@ -129,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                     Snackbar.make(rootLayout, "Please enter email address", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
-                if (!Helper.isValidEmail(editEmail.getText().toString())){
+                if (Helper.isValidEmail(editEmail.getText().toString())){
                     Helper.displayMessageToast(MainActivity.this, "Invalid email entered");
                 }
                 if (TextUtils.isEmpty(Objects.requireNonNull(editPassword.getText()).toString())) {
@@ -207,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                     Snackbar.make(rootLayout, "Please enter password", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
-                if (!Helper.isValidEmail(editEmail.getText().toString())){
+                if (Helper.isValidEmail(editEmail.getText().toString())){
                     Helper.displayMessageToast(MainActivity.this, "Invalid email entered");
                 }
                 if (editPassword.getText().toString().length() < 6) {
@@ -267,15 +245,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        auth.addAuthStateListener(mAuthListener);
+        //auth.addAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        if (mAuthListener != null) {
-            auth.removeAuthStateListener(mAuthListener);
-        }
+//        if (((FirebaseApplication)getApplication()).mAuthListener != null) {
+//            auth.removeAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
+//        }
     }
 }
 

@@ -1,15 +1,15 @@
-package com.example.mudu.warnabruv.model;
+package com.example.mudu.warnabruv;
 
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
-import com.example.mudu.warnabruv.Home;
-import com.example.mudu.warnabruv.MainActivity;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class FirebaseApplication extends Application {
+
     public static final String TAG = FirebaseApplication.class.getSimpleName();
 
     public FirebaseAuth firebaseAuth;

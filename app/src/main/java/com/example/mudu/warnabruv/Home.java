@@ -32,7 +32,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Interpolator;
@@ -107,6 +106,12 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
     Marker mCurrent;
     SupportMapFragment mapFragment;
 
+    /*
+    public Home() {
+        auth = ((FirebaseApplication)getApplication()).getFirebaseAuth();
+    }
+    */
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -138,7 +143,9 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
             public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
                 int id = menuItem.getItemId();
 
-                if (id == R.id.nav_profile) {
+                if (id == R.id.nav_home) {
+
+                } else if (id == R.id.nav_profile) {
                     fragment = new ProfileFragment();
                 } else if (id == R.id.nav_settings) {
 
@@ -161,6 +168,7 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
         scheduleJob();
 
         auth = FirebaseAuth.getInstance();
+
         mAuthListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
@@ -229,9 +237,9 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         //getMenuInflater().inflate(R.menu.profile, menu);
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.drawer_menu, menu);
-        return true;
+//        MenuInflater inflater = getMenuInflater();
+//        inflater.inflate(R.menu.drawer_menu, menu);
+          return true;
     }
 
     @Override
@@ -265,9 +273,9 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
         // to call stopService() would keep it alive indefinitely.
         stopService(new Intent(this, NetworkSchedulerService.class));
         super.onStop();
-        if (mAuthListener != null) {
-            auth.removeAuthStateListener(mAuthListener);
-        }
+//        if (((FirebaseApplication)getApplication()).mAuthListener != null) {
+//            auth.removeAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
+//        }
     }
 
     @Override
@@ -277,7 +285,7 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
         Intent startServiceIntent = new Intent(this, NetworkSchedulerService.class);
         startService(startServiceIntent);
 
-        auth.addAuthStateListener(mAuthListener);
+//        auth.addAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
     }
 
     @Override

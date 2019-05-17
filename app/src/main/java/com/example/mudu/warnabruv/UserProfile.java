@@ -1,4 +1,4 @@
-package com.example.mudu.warnabruv.model;
+package com.example.mudu.warnabruv;
 
 public class UserProfile {
 

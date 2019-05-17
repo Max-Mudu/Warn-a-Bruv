@@ -1,4 +1,4 @@
-package com.example.mudu.warnabruv.model;
+package com.example.mudu.warnabruv.Firebase;
 
 public class FirebaseUserEntity {
     private String uId, email, password, name, phone, country;

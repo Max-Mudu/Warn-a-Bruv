@@ -1,4 +1,4 @@
-package com.example.mudu.warnabruv.model;
+package com.example.mudu.warnabruv.Helper;
 
 import android.content.Context;
 import android.widget.Toast;
@@ -11,7 +11,10 @@ public class Helper {
     public static final int SELECT_PICTURE = 2000;
 
     public static boolean isValidEmail(String email) {
-        return email.contains("@");
+        if (email.contains("@")) {
+            return false;
+        }
+        return true;
     }
 
     public static void displayMessageToast(Context context, String displayMessage) {

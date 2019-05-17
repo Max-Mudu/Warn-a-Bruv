@@ -1,4 +1,4 @@
-package com.example.mudu.warnabruv.model;
+package com.example.mudu.warnabruv.Firebase;
 
 import android.content.Context;
 import android.net.Uri;
@@ -57,12 +57,16 @@ public class FirebaseStorageHelper {
                             @Override
                             public void onSuccess(Uri uri) {
                                 String downloadUrl = uri.toString();
-                                Glide.with(context).load(downloadUrl)
-                                        .crossFade()
-                                        .thumbnail(0.5f)
-                                        .bitmapTransform(new CircleTransform(context))
-                                        .diskCacheStrategy(DiskCacheStrategy.ALL)
-                                        .into(imageView);
+                                try {
+                                    Glide.with(context).load(downloadUrl)
+                                            .crossFade()
+                                            .thumbnail(0.5f)
+                                            .bitmapTransform(new CircleTransform(context))
+                                            .diskCacheStrategy(DiskCacheStrategy.ALL)
+                                            .into(imageView);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
                             }
                         });
                     }

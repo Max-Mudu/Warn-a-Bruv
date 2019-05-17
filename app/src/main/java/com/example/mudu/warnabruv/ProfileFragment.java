@@ -11,6 +11,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -19,11 +20,13 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.example.mudu.warnabruv.model.FirebaseApplication;
-import com.example.mudu.warnabruv.model.FirebaseDatabaseHelper;
-import com.example.mudu.warnabruv.model.FirebaseStorageHelper;
-import com.example.mudu.warnabruv.model.Helper;
-import com.example.mudu.warnabruv.model.SimpleDividerItemDecoration;
+import com.example.mudu.warnabruv.Firebase.FirebaseDatabaseHelper;
+import com.example.mudu.warnabruv.Firebase.FirebaseStorageHelper;
+import com.example.mudu.warnabruv.adapter.RecyclerViewAdapter;
+import com.example.mudu.warnabruv.Helper.Helper;
+import com.example.mudu.warnabruv.Helper.SimpleDividerItemDecoration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class ProfileFragment extends Fragment {
@@ -33,8 +36,9 @@ public class ProfileFragment extends Fragment {
     private TextView profileName;
     private TextView country;
     private TextView userStatus;
+    private RecyclerViewAdapter mRecyclerViewAdapter;
     private RecyclerView recyclerView;
-    private LinearLayoutManager linearLayoutManager;
+    private List<UserProfile> userProfile;
     private String id;
     private static final int REQUEST_READ_PERMISSION = 120;
 
@@ -44,7 +48,7 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+        setHasOptionsMenu(false);
     }
 
     @Nullable
@@ -70,9 +74,15 @@ public class ProfileFragment extends Fragment {
         });
 
         recyclerView = view.findViewById(R.id.profile_list);
-        linearLayoutManager = new LinearLayoutManager(getActivity());
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(linearLayoutManager);
+        recyclerView.setHasFixedSize(true);
         recyclerView.addItemDecoration(new SimpleDividerItemDecoration(getActivity()));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+
+        userProfile = new ArrayList<>();
+        mRecyclerViewAdapter =new RecyclerViewAdapter(getActivity(), userProfile);
+        recyclerView.setAdapter(mRecyclerViewAdapter);
 
         ((FirebaseApplication)getActivity().getApplication()).getFirebaseAuth();
         id = ((FirebaseApplication)getActivity().getApplication()).getFirebaseUserAuthenticatedId();
@@ -87,16 +97,18 @@ public class ProfileFragment extends Fragment {
         super.onActivityResult(requestCode, resultCode, data);
         System.out.println("user id has entered onActivityResult ");
         if (requestCode == Helper.SELECT_PICTURE) {
-            Uri selectedImageUri = data.getData();
-            String imagePath = getPath(selectedImageUri);
-            FirebaseStorageHelper storageHelper = new FirebaseStorageHelper(getActivity());
+            if (data != null) {
+                Uri selectedImageUri = data.getData();
+                String imagePath = getPath(selectedImageUri);
+                FirebaseStorageHelper storageHelper = new FirebaseStorageHelper(getActivity());
 
-            if (ActivityCompat.checkSelfPermission(Objects.requireNonNull(getActivity()), Manifest.permission.READ_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_PERMISSION);
-                return;
+                if (ActivityCompat.checkSelfPermission(Objects.requireNonNull(getActivity()), Manifest.permission.READ_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_PERMISSION);
+                    return;
+                }
+                storageHelper.saveProfileImageToCloud(id, selectedImageUri, profilephoto);
             }
-            storageHelper.saveProfileImageToCloud(id, selectedImageUri, profilephoto);
         }
     }
 

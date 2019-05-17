@@ -8,7 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.example.mudu.warnabruv.R;
-import com.example.mudu.warnabruv.model.UserProfile;
+import com.example.mudu.warnabruv.UserProfile;
 import java.util.List;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewHolders> {
