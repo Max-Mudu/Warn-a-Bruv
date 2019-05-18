@@ -5,7 +5,6 @@
     android:id="@+id/main_container_wrapper"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
     android:fitsSystemWindows="true"
     tools:showIn="@layout/app_bar"
     tools:context=".Home">
