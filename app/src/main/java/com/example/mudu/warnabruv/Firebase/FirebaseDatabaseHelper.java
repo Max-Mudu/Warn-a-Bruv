@@ -5,7 +5,6 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
-
 import com.example.mudu.warnabruv.UserProfile;
 import com.example.mudu.warnabruv.adapter.RecyclerViewAdapter;
 import com.example.mudu.warnabruv.Helper.Helper;
@@ -18,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class FirebaseDatabaseHelper {
 
@@ -73,8 +73,9 @@ public class FirebaseDatabaseHelper {
 
     private List<UserProfile> adapterSourceData(DataSnapshot dataSnapshot, String uId) {
         List<UserProfile> allUserData = new ArrayList<UserProfile>();
-        if (dataSnapshot.getKey().equals(uId)) {
+        if (Objects.requireNonNull(dataSnapshot.getKey()).equals(uId)) {
             FirebaseUserEntity userInformation = dataSnapshot.getValue(FirebaseUserEntity.class);
+            assert userInformation != null;
             allUserData.add(new UserProfile(Helper.NAME, userInformation.getName()));
             allUserData.add(new UserProfile(Helper.EMAIL, userInformation.getEmail()));
             allUserData.add(new UserProfile(Helper.PHONE, userInformation.getPhone()));

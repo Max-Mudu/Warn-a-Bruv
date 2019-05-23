@@ -1,5 +1,19 @@
 package com.example.mudu.warnabruv;
 
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentTransaction;
+import android.view.View;
+import android.support.v4.view.GravityCompat;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.view.MenuItem;
+import android.support.design.widget.NavigationView;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
@@ -13,31 +27,21 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
-import android.support.design.internal.NavigationMenuView;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import com.example.mudu.warnabruv.Firebase.FirebaseUserEntity;
+import com.example.mudu.warnabruv.Helper.Helper;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
@@ -55,12 +59,14 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -69,12 +75,26 @@ import android.Manifest;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class Home extends AppCompatActivity implements OnMapReadyCallback,
+public class Home extends AppCompatActivity
+        implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener {
 
-    public static final String TAG = Home.class.getSimpleName();
+    private static final String TAG = Home.class.getSimpleName();
+
+    // tags used to attach the fragments
+    private static final String TAG_HOME = "home";
+    private static final String TAG_PROFILE = "profile";
+    private static final String TAG_SETTINGS = "settings";
+    private static final String TAG_HELP = "help";
+    public static String CURRENT_TAG = TAG_HOME;
+
+    // toolbar titles respected to selected nav menu item
+    private String[] activityTitles;
+
+    // flag to load home fragment when user presses back key
+    private boolean shouldLoadHomeFragOnBackPress = true;
 
     private FragmentManager fragmentManager;
     private Fragment fragment = null;
@@ -106,16 +126,11 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
     Marker mCurrent;
     SupportMapFragment mapFragment;
 
-    /*
-    public Home() {
-        auth = ((FirebaseApplication)getApplication()).getFirebaseAuth();
-    }
-    */
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -123,46 +138,26 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        toolbar.setBackgroundColor(Color.TRANSPARENT);
 
-        DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawer, toolbar, R.string.navigation_drawer_open,
-                                                                    R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
+        // load toolbar titles from string resources
+        activityTitles = getResources().getStringArray(R.array.nav_item_activity_titles);
 
-        fragmentManager = getSupportFragmentManager();
-        final FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragment = new ProfileFragment();
-        fragmentTransaction.replace(R.id.main_container_wrapper, fragment);
-        fragmentTransaction.commit();
-
-        NavigationView navigationView = findViewById(R.id.nav_view);
-        disableNavigationViewScrollbars(navigationView);
-        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+        FloatingActionButton fab = findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
-                int id = menuItem.getItemId();
-
-                if (id == R.id.nav_home) {
-
-                } else if (id == R.id.nav_profile) {
-                    fragment = new ProfileFragment();
-                } else if (id == R.id.nav_settings) {
-
-                } else if (id == R.id.nav_help) {
-
-                }
-
-                FragmentTransaction transaction = fragmentManager.beginTransaction();
-                transaction.replace(R.id.main_container_wrapper, fragment);
-                transaction.commit();
-
-                DrawerLayout drawer = findViewById(R.id.drawer_layout);
-                assert drawer != null;
-                drawer.closeDrawer(GravityCompat.START);
-                return true;
+            public void onClick(View view) {
+                displayLocation();
             }
         });
+
+        final DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+        navigationView.setNavigationItemSelectedListener(this);
 
         checkConnection();
         scheduleJob();
@@ -177,6 +172,14 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
                 }
             }
         };
+
+//        View headerView = navigationView.getHeaderView(0);
+//        TextView profileName = headerView.findViewById(R.id.profile_username);
+//        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+//        if (user != null) {
+//            String name = user.getDisplayName();
+//            profileName = name
+//        }
 
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -203,24 +206,11 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
             e.printStackTrace();
         }
 
-        /*
-        locationButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startLocationUpdates();
-                displayLocation();
-                Snackbar.make(Objects.requireNonNull(mapFragment.getView()), "You Are Online", Snackbar.LENGTH_SHORT)
-                        .show();
-            }
-        });
-        */
-
         //Geo Fire
         drivers = FirebaseDatabase.getInstance().getReference("Drivers");
         mGeoFire = new GeoFire(drivers);
 
         setUpLocation();
-
     }
 
     @Override
@@ -236,10 +226,8 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.profile, menu);
-//        MenuInflater inflater = getMenuInflater();
-//        inflater.inflate(R.menu.drawer_menu, menu);
-          return true;
+        getMenuInflater().inflate(R.menu.home, menu);
+        return true;
     }
 
     @Override
@@ -247,6 +235,13 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -272,6 +267,7 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
         // to stopService() won't prevent scheduled jobs to be processed. However, failing
         // to call stopService() would keep it alive indefinitely.
         stopService(new Intent(this, NetworkSchedulerService.class));
+        mGoogleApiClient.disconnect();
         super.onStop();
 //        if (((FirebaseApplication)getApplication()).mAuthListener != null) {
 //            auth.removeAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
@@ -328,13 +324,29 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
         snackbar.show();
     }
 
-    private void disableNavigationViewScrollbars(NavigationView navigationView) {
-        if (navigationView != null) {
-            NavigationMenuView navigationMenuView = (NavigationMenuView) navigationView.getChildAt(0);
-            if (navigationMenuView != null) {
-                navigationMenuView.setVerticalScrollBarEnabled(false);
-            }
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        if (id == R.id.nav_home) {
+            // Handle the camera action
+        } else if (id == R.id.nav_profile) {
+
+        } else if (id == R.id.nav_settings) {
+
+        } else if (id == R.id.nav_help) {
+
+        } else if (id == R.id.nav_share) {
+
+        } else if (id == R.id.nav_send) {
+
         }
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
     }
 
     private void setUpLocation() {
@@ -401,7 +413,7 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
                             @Override
                             public void onClick(DialogInterface dialog, int i) {
                                 //Prompt the user once explanation has been shown
-                                requestPermissions();
+                                requestLocationPermissions();
                             }
                         })
                         .create()
@@ -418,8 +430,8 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
         }
     }
 
-    private void requestPermissions() {
-        //Request runtime permissions
+    private void requestLocationPermissions() {
+        //Request runtime location permissions
         ActivityCompat.requestPermissions(this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                 MY_PERMISSION_REQUEST_CODE);
@@ -497,14 +509,19 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
 
         mMap = googleMap;
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            checkLocationPermission();
+        if (mMap != null) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                checkLocationPermission();
+            }
+            MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(this, R.raw.google_style);
+            mMap.setMapStyle(style);
+
+            mMap.setMyLocationEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+            displayLocation();
+            startLocationUpdates();
         }
-        mMap.setMyLocationEnabled(true);
-        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-        displayLocation();
-        startLocationUpdates();
     }
 
     @Override
@@ -528,32 +545,30 @@ public class Home extends AppCompatActivity implements OnMapReadyCallback,
     @Override
     public void onLocationChanged(Location location) {
         mGoogleApiClient.connect();
-        if (!locationButton.isEnabled()) {
-            final double latitude = location.getLatitude();
-            final double longitude = location.getLongitude();
+        final double latitude = location.getLatitude();
+        final double longitude = location.getLongitude();
 
-            //update to firebase
-            mGeoFire.setLocation(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid(),
-                    new GeoLocation(latitude, longitude), new GeoFire.CompletionListener() {
-                        @Override
-                        public void onComplete(String key, DatabaseError error) {
-                            //Add Marker
-                            if (mCurrent != null) {
-                                mCurrent.remove(); //Removing Marker that is already there
-                            }
-                            mCurrent = mMap.addMarker(new MarkerOptions()
-                                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin))
-                                                        .position(new LatLng(latitude, longitude))
-                                                        .title("Me"));
-
-                            //Move camera to this position
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude),
-                                                                                    21));
-                            //Draw animation to rotate marker
-                            rotateMarker(mCurrent, -360, mMap);
+        // update to firebase
+        mGeoFire.setLocation(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getUid(),
+                new GeoLocation(latitude, longitude), new GeoFire.CompletionListener() {
+                    @Override
+                    public void onComplete(String key, DatabaseError error) {
+                        // Add Marker
+                        if (mCurrent != null) {
+                            mCurrent.remove(); //Removing Marker that is already there
                         }
-                    });
-        }
+                        mCurrent = mMap.addMarker(new MarkerOptions()
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                                .position(new LatLng(latitude, longitude))
+                                .title("Me"));
+
+                        //Move camera to this position
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(latitude, longitude),
+                                19));
+                        //Draw animation to rotate marker
+                        rotateMarker(mCurrent, -360, mMap);
+                    }
+                });
     }
 
     private void rotateMarker(final Marker mCurrent, final float i, GoogleMap mMap) {
