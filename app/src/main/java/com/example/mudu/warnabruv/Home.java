@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentTransaction;
 import android.view.View;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -34,14 +33,10 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import com.example.mudu.warnabruv.Firebase.FirebaseUserEntity;
-import com.example.mudu.warnabruv.Helper.Helper;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
@@ -59,14 +54,12 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -83,19 +76,6 @@ public class Home extends AppCompatActivity
 
     private static final String TAG = Home.class.getSimpleName();
 
-    // tags used to attach the fragments
-    private static final String TAG_HOME = "home";
-    private static final String TAG_PROFILE = "profile";
-    private static final String TAG_SETTINGS = "settings";
-    private static final String TAG_HELP = "help";
-    public static String CURRENT_TAG = TAG_HOME;
-
-    // toolbar titles respected to selected nav menu item
-    private String[] activityTitles;
-
-    // flag to load home fragment when user presses back key
-    private boolean shouldLoadHomeFragOnBackPress = true;
-
     private FragmentManager fragmentManager;
     private Fragment fragment = null;
 
@@ -107,8 +87,6 @@ public class Home extends AppCompatActivity
     //Play services
     private static final int MY_PERMISSION_REQUEST_CODE = 5000;
     private static final int PLAY_SERVICE_RES_REQUEST = 5001;
-
-    private ImageView locationButton;
 
     private GoogleApiClient mGoogleApiClient;
     private Task<Location> mLastLocation;
@@ -139,9 +117,6 @@ public class Home extends AppCompatActivity
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(Color.TRANSPARENT);
-
-        // load toolbar titles from string resources
-        activityTitles = getResources().getStringArray(R.array.nav_item_activity_titles);
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -190,7 +165,7 @@ public class Home extends AppCompatActivity
             if (mapFragment != null &&
                     Objects.requireNonNull(mapFragment.getView()).findViewById(Integer.parseInt("1")) != null) {
                 //Get the button view
-                locationButton = ((View) Objects.requireNonNull(mapFragment.getView()).findViewById(Integer.parseInt("1"))
+                ImageView locationButton = ((View) Objects.requireNonNull(mapFragment.getView()).findViewById(Integer.parseInt("1"))
                         .getParent()).findViewById(Integer.parseInt("2"));
                 //Set custom icon
                 locationButton.setBackgroundResource(R.drawable.ic_my_location);
@@ -211,6 +186,13 @@ public class Home extends AppCompatActivity
         mGeoFire = new GeoFire(drivers);
 
         setUpLocation();
+    }
+
+    private void signOut() {
+        FirebaseAuth.getInstance().signOut();
+        Intent intent = new Intent(Home.this, MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     @Override
@@ -238,7 +220,7 @@ public class Home extends AppCompatActivity
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_map_type) {
             return true;
         }
 
@@ -330,18 +312,14 @@ public class Home extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_home) {
-            // Handle the camera action
-        } else if (id == R.id.nav_profile) {
+        if (id == R.id.nav_profile) {
 
         } else if (id == R.id.nav_settings) {
 
         } else if (id == R.id.nav_help) {
 
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        } else if (id == R.id.nav_logout) {
+            signOut();
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
@@ -514,9 +492,6 @@ public class Home extends AppCompatActivity
                     != PackageManager.PERMISSION_GRANTED) {
                 checkLocationPermission();
             }
-            MapStyleOptions style = MapStyleOptions.loadRawResourceStyle(this, R.raw.google_style);
-            mMap.setMapStyle(style);
-
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(false);
             displayLocation();

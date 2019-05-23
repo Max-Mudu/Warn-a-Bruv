@@ -82,15 +82,15 @@ public class ProfileFragment extends Fragment {
         });
 
         recyclerView = view.findViewById(R.id.profile_list);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity());
-        recyclerView.setLayoutManager(linearLayoutManager);
-        recyclerView.setHasFixedSize(true);
-        recyclerView.addItemDecoration(new SimpleDividerItemDecoration(getActivity()));
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
         userProfile = new ArrayList<>();
         mRecyclerViewAdapter =new RecyclerViewAdapter(getActivity(), userProfile);
         recyclerView.setAdapter(mRecyclerViewAdapter);
+
+        recyclerView.setHasFixedSize(true);
+        recyclerView.addItemDecoration(new SimpleDividerItemDecoration(getActivity()));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
 
         ((FirebaseApplication)getActivity().getApplication()).getFirebaseAuth();
         id = ((FirebaseApplication)getActivity().getApplication()).getFirebaseUserAuthenticatedId();
