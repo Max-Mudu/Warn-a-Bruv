@@ -6,7 +6,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
 import com.example.mudu.warnabruv.R;
 import com.example.mudu.warnabruv.UserProfile;
 import java.util.List;
@@ -26,7 +25,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewHolder
     @Override
     public RecyclerViewHolders onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
         RecyclerViewHolders viewHolder = null;
-        View layoutView = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.profile_data_list,viewGroup, false);
+        View layoutView = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.profile_data_list, viewGroup, false);
         viewHolder = new RecyclerViewHolders(layoutView);
         return viewHolder;
     }

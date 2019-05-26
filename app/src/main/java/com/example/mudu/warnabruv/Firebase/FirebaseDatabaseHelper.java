@@ -1,13 +1,12 @@
 package com.example.mudu.warnabruv.Firebase;
 
-import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
+import com.example.mudu.warnabruv.Helper.Helper;
 import com.example.mudu.warnabruv.UserProfile;
 import com.example.mudu.warnabruv.adapter.RecyclerViewAdapter;
-import com.example.mudu.warnabruv.Helper.Helper;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -50,7 +49,7 @@ public class FirebaseDatabaseHelper {
             public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
                 List<UserProfile> userData = adapterSourceData(dataSnapshot, uid);
                 System.out.println("User login Size " + userData.size());
-                RecyclerViewAdapter recyclerViewAdapter = new RecyclerViewAdapter((Activity)context, userData);
+                RecyclerViewAdapter recyclerViewAdapter = new RecyclerViewAdapter(context, userData);
                 recyclerView.setAdapter(recyclerViewAdapter);
             }
 

@@ -1,9 +1,11 @@
 package com.example.mudu.warnabruv;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentTransaction;
 import android.view.View;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -94,6 +96,8 @@ public class Home extends AppCompatActivity
     FirebaseAuth auth;
     FirebaseAuth.AuthStateListener mAuthListener;
 
+    FloatingActionButton fab;
+
     private static int UPDATE_INTERVAL = 5000;
     private static int FASTEST_INTERVAL = 3000;
     private static int DISPLACEMENT = 10;
@@ -110,21 +114,21 @@ public class Home extends AppCompatActivity
         setContentView(R.layout.activity_home);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        mapFragment = SupportMapFragment.newInstance();
         Objects.requireNonNull(mapFragment).getMapAsync(this);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(Color.TRANSPARENT);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
+        fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 displayLocation();
             }
         });
+        showFloatingButoon(true);
 
         final DrawerLayout drawer = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
@@ -186,6 +190,9 @@ public class Home extends AppCompatActivity
         mGeoFire = new GeoFire(drivers);
 
         setUpLocation();
+
+        FragmentManager fManager = getSupportFragmentManager();
+        fManager.beginTransaction().replace(R.id.main_container_wrapper, mapFragment).commit();
     }
 
     private void signOut() {
@@ -193,6 +200,11 @@ public class Home extends AppCompatActivity
         Intent intent = new Intent(Home.this, MainActivity.class);
         startActivity(intent);
         finish();
+    }
+
+    @SuppressLint("RestrictedApi")
+    public void showFloatingButoon(boolean flag) {
+        fab.setVisibility(flag ? View.VISIBLE: View.GONE);
     }
 
     @Override
@@ -313,7 +325,10 @@ public class Home extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_profile) {
-
+            showFloatingButoon(false);
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.replace(R.id.main_container_wrapper, new ProfileFragment());
+            fragmentTransaction.commit();
         } else if (id == R.id.nav_settings) {
 
         } else if (id == R.id.nav_help) {

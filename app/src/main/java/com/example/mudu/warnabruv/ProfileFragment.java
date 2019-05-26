@@ -29,16 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-
-/*
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link ProfileFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link ProfileFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class ProfileFragment extends Fragment {
+
     private static final String TAG = ProfileFragment.class.getSimpleName();
     private ImageView profilephoto;
     private TextView profileName;
@@ -61,8 +53,10 @@ public class ProfileFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_profile, container, false);
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable
+            ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_profile, container,
+                false);
 
         Objects.requireNonNull(getActivity()).setTitle("My Profile");
 
@@ -82,15 +76,16 @@ public class ProfileFragment extends Fragment {
         });
 
         recyclerView = view.findViewById(R.id.profile_list);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity());
+        recyclerView.setLayoutManager(linearLayoutManager);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.addItemDecoration(new
+                SimpleDividerItemDecoration(getActivity()));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
 
         userProfile = new ArrayList<>();
         mRecyclerViewAdapter =new RecyclerViewAdapter(getActivity(), userProfile);
         recyclerView.setAdapter(mRecyclerViewAdapter);
-
-        recyclerView.setHasFixedSize(true);
-        recyclerView.addItemDecoration(new SimpleDividerItemDecoration(getActivity()));
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
 
         ((FirebaseApplication)getActivity().getApplication()).getFirebaseAuth();
         id = ((FirebaseApplication)getActivity().getApplication()).getFirebaseUserAuthenticatedId();
