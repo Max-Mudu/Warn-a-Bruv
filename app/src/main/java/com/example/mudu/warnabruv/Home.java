@@ -81,6 +81,8 @@ public class Home extends AppCompatActivity
     private FragmentManager fragmentManager;
     private Fragment fragment = null;
 
+    private ImageView profileImage;
+
     private GoogleMap mMap;
 
     private FusedLocationProviderClient mFusedLocationProviderClient;
@@ -97,6 +99,7 @@ public class Home extends AppCompatActivity
     FirebaseAuth.AuthStateListener mAuthListener;
 
     FloatingActionButton fab;
+    private Handler mHandler;
 
     private static int UPDATE_INTERVAL = 5000;
     private static int FASTEST_INTERVAL = 3000;
@@ -128,7 +131,9 @@ public class Home extends AppCompatActivity
                 displayLocation();
             }
         });
-        showFloatingButoon(true);
+        showFloatingButton(true);
+
+        mHandler = new Handler();
 
         final DrawerLayout drawer = findViewById(R.id.drawer_layout);
         NavigationView navigationView = findViewById(R.id.nav_view);
@@ -137,6 +142,19 @@ public class Home extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
+
+        // Handle profile image click listener
+        navigationView.setNavigationItemSelectedListener(this);
+        View headerView = navigationView.getHeaderView(0);
+        profileImage = headerView.findViewById(R.id.circular_image_id);
+        profileImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (v.getId() == R.id.circular_image_id) {
+                    loadProfileFragment();
+                }
+            }
+        });
 
         checkConnection();
         scheduleJob();
@@ -191,8 +209,8 @@ public class Home extends AppCompatActivity
 
         setUpLocation();
 
-        FragmentManager fManager = getSupportFragmentManager();
-        fManager.beginTransaction().replace(R.id.main_container_wrapper, mapFragment).commit();
+        fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction().replace(R.id.main_container_wrapper, mapFragment).commit();
     }
 
     private void signOut() {
@@ -203,7 +221,7 @@ public class Home extends AppCompatActivity
     }
 
     @SuppressLint("RestrictedApi")
-    public void showFloatingButoon(boolean flag) {
+    public void showFloatingButton(boolean flag) {
         fab.setVisibility(flag ? View.VISIBLE: View.GONE);
     }
 
@@ -215,6 +233,30 @@ public class Home extends AppCompatActivity
         } else {
             super.onBackPressed();
         }
+    }
+
+    private void loadProfileFragment() {
+        // Sometimes, when fragment has huge data, screen seems hanging
+        // when switching between navigation menus
+        // So using runnable, the fragment is loaded with cross fade effect
+        final Runnable pendingRunnable = new Runnable() {
+            @Override
+            public void run() {
+                // update the main content by replacing fragments
+                showFloatingButton(false);
+                FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+                fragmentTransaction.replace(R.id.main_container_wrapper, new ProfileFragment());
+                fragmentTransaction.commit();
+            }
+        };
+        // If mPendingRunnable is not null, then add to the message queue
+        if (pendingRunnable != null) {
+            mHandler.post(pendingRunnable);
+        }
+        //Closing drawer on item click
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        drawer.closeDrawers();
     }
 
     @Override
@@ -325,10 +367,8 @@ public class Home extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_profile) {
-            showFloatingButoon(false);
-            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-            fragmentTransaction.replace(R.id.main_container_wrapper, new ProfileFragment());
-            fragmentTransaction.commit();
+            showFloatingButton(false);
+            loadProfileFragment();
         } else if (id == R.id.nav_settings) {
 
         } else if (id == R.id.nav_help) {
