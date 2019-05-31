@@ -6,7 +6,8 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 import android.widget.ImageView;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.mudu.warnabruv.other.CircleTransform;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -59,11 +60,10 @@ public class FirebaseStorageHelper {
                                 String downloadUrl = uri.toString();
                                 try {
                                     Glide.with(context).load(downloadUrl)
-                                            .crossFade()
-                                            .thumbnail(0.5f)
-                                            .bitmapTransform(new CircleTransform(context))
-                                            .diskCacheStrategy(DiskCacheStrategy.ALL)
-                                            .into(imageView);
+                                              .apply(RequestOptions.bitmapTransform(new CircleTransform()))
+                                              .transition(new DrawableTransitionOptions().crossFade())
+                                              .thumbnail(0.5f)
+                                              .into(imageView);
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }

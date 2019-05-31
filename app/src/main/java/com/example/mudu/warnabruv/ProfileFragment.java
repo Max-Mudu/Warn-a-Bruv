@@ -14,6 +14,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,7 +26,8 @@ import com.example.mudu.warnabruv.Firebase.FirebaseStorageHelper;
 import com.example.mudu.warnabruv.adapter.RecyclerViewAdapter;
 import com.example.mudu.warnabruv.Helper.Helper;
 import com.example.mudu.warnabruv.Helper.SimpleDividerItemDecoration;
-import java.util.ArrayList;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,6 +43,9 @@ public class ProfileFragment extends Fragment {
     private List<UserProfile> userProfile;
     private String id;
     private static final int REQUEST_READ_PERMISSION = 120;
+    FirebaseAuth auth;
+    FirebaseAuth.AuthStateListener mAuthListener;
+    FirebaseUser currentUser;
 
     public ProfileFragment() {
     }
@@ -49,14 +54,14 @@ public class ProfileFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(false);
+        setUpFirebaseAuth();
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable
             ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_profile, container,
-                false);
+        View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
         Objects.requireNonNull(getActivity()).setTitle("My Profile");
 
@@ -83,9 +88,9 @@ public class ProfileFragment extends Fragment {
                 SimpleDividerItemDecoration(getActivity()));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        userProfile = new ArrayList<>();
-        mRecyclerViewAdapter =new RecyclerViewAdapter(getActivity(), userProfile);
-        recyclerView.setAdapter(mRecyclerViewAdapter);
+//        userProfile = new ArrayList<>();
+//        mRecyclerViewAdapter =new RecyclerViewAdapter(getActivity(), userProfile);
+//        recyclerView.setAdapter(mRecyclerViewAdapter);
 
         ((FirebaseApplication)getActivity().getApplication()).getFirebaseAuth();
         id = ((FirebaseApplication)getActivity().getApplication()).getFirebaseUserAuthenticatedId();
@@ -133,6 +138,38 @@ public class ProfileFragment extends Fragment {
             if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 Toast.makeText(getActivity(), "Sorry! You can't use this app without granting this permission", Toast.LENGTH_LONG).show();
             }
+        }
+    }
+
+    private void setUpFirebaseAuth() {
+        Log.d(TAG, "setUpFirebaseAuth: Setting up firebase auth.");
+
+        auth = FirebaseAuth.getInstance();
+        currentUser = auth.getCurrentUser();
+
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                if (currentUser != null) {
+                    Log.d(TAG, "onAuthStateChanged signed in : " + currentUser.getUid());
+                } else {
+                    Log.d(TAG, "onAuthStateChanged signed out");
+                }
+            }
+        };
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        auth.addAuthStateListener(mAuthListener);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mAuthListener != null) {
+            auth.removeAuthStateListener(mAuthListener);
         }
     }
 }

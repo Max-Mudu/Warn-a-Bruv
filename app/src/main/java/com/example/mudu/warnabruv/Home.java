@@ -62,13 +62,17 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import java.util.Objects;
 import android.Manifest;
 import android.widget.TextView;
 import android.widget.Toast;
+import de.hdodenhof.circleimageview.CircleImageView;
 
 public class Home extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,
@@ -81,7 +85,7 @@ public class Home extends AppCompatActivity
     private FragmentManager fragmentManager;
     private Fragment fragment = null;
 
-    private ImageView profileImage;
+    private CircleImageView profileImage;
 
     private GoogleMap mMap;
 
@@ -95,6 +99,7 @@ public class Home extends AppCompatActivity
     private GoogleApiClient mGoogleApiClient;
     private Task<Location> mLastLocation;
 
+    FirebaseUser currentUser;
     FirebaseAuth auth;
     FirebaseAuth.AuthStateListener mAuthListener;
 
@@ -108,6 +113,8 @@ public class Home extends AppCompatActivity
     DatabaseReference drivers;
     GeoFire mGeoFire;
 
+    private DatabaseReference mDatabaseUser_name;
+
     Marker mCurrent;
     SupportMapFragment mapFragment;
 
@@ -119,6 +126,18 @@ public class Home extends AppCompatActivity
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         mapFragment = SupportMapFragment.newInstance();
         Objects.requireNonNull(mapFragment).getMapAsync(this);
+
+        auth = FirebaseAuth.getInstance();
+        currentUser = auth.getCurrentUser();
+
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                if (auth.getCurrentUser() == null) {
+                    startActivity(new Intent(Home.this, MainActivity.class));
+                }
+            }
+        };
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -143,9 +162,10 @@ public class Home extends AppCompatActivity
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
+        final String user_id = FirebaseAuth.getInstance().getCurrentUser().getUid();
         // Handle profile image click listener
         navigationView.setNavigationItemSelectedListener(this);
-        View headerView = navigationView.getHeaderView(0);
+        final View headerView = navigationView.getHeaderView(0);
         profileImage = headerView.findViewById(R.id.circular_image_id);
         profileImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -156,27 +176,27 @@ public class Home extends AppCompatActivity
             }
         });
 
-        checkConnection();
-        scheduleJob();
-
-        auth = FirebaseAuth.getInstance();
-
-        mAuthListener = new FirebaseAuth.AuthStateListener() {
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference uidRef = databaseReference.child("Users").child(uid);
+        ValueEventListener valueEventListener = new ValueEventListener() {
             @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                if (auth.getCurrentUser() == null) {
-                    startActivity(new Intent(Home.this, MainActivity.class));
-                }
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                String userName = dataSnapshot.child("name").getValue(String.class);
+                dataSnapshot.getKey();
+                TextView profileName = headerView.findViewById(R.id.profile_username);
+                profileName.setText(userName);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.d(TAG, "DB error: " + databaseError.getMessage());
             }
         };
+        uidRef.addListenerForSingleValueEvent(valueEventListener);
 
-//        View headerView = navigationView.getHeaderView(0);
-//        TextView profileName = headerView.findViewById(R.id.profile_username);
-//        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-//        if (user != null) {
-//            String name = user.getDisplayName();
-//            profileName = name
-//        }
+        checkConnection();
+        scheduleJob();
 
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -259,6 +279,10 @@ public class Home extends AppCompatActivity
         drawer.closeDrawers();
     }
 
+    private void retrieveUserInfo() {
+
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -317,18 +341,26 @@ public class Home extends AppCompatActivity
         Intent startServiceIntent = new Intent(this, NetworkSchedulerService.class);
         startService(startServiceIntent);
 
-//        auth.addAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
+        if (currentUser == null){
+            startActivity(new Intent(Home.this, MainActivity.class));
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        if (null != mAuthListener) {
+            auth.removeAuthStateListener(mAuthListener);
+        }
         stopLocationUpdates();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (null != mAuthListener) {
+            auth.addAuthStateListener(mAuthListener);
+        }
         startLocationUpdates();
     }
 
@@ -367,7 +399,6 @@ public class Home extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_profile) {
-            showFloatingButton(false);
             loadProfileFragment();
         } else if (id == R.id.nav_settings) {
 

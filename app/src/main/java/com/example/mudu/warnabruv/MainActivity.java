@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
                 .build());
         setContentView(R.layout.activity_main);
 
-        //Check the current user
+        // Check the current user
         auth = ((FirebaseApplication)getApplication()).getFirebaseAuth();
         ((FirebaseApplication)getApplication()).checkUserLogin(MainActivity.this);
 
@@ -196,11 +196,16 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
+                final android.app.AlertDialog waitingDialog = new SpotsDialog(MainActivity.this, R.style.waiting_dialog);
+                waitingDialog.setTitle("Creating an Account");
+                waitingDialog.show();
+
                 //Register new user
                 auth.createUserWithEmailAndPassword(editEmail.getText().toString(), editPassword.getText().toString())
                         .addOnSuccessListener(new OnSuccessListener<AuthResult>() {
                             @Override
                             public void onSuccess(AuthResult authResult) {
+                                waitingDialog.dismiss();
                                 //Save userEntity to database
                                 FirebaseUserEntity userEntity = new FirebaseUserEntity();
                                 userEntity.setEmail(editEmail.getText().toString());
@@ -215,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
                                             @Override
                                             public void onSuccess(Void aVoid) {
                                                 Snackbar.make(rootLayout, "Registration Successful !!!", Snackbar.LENGTH_SHORT).show();
+                                                showLoginDialog();
                                             }
                                         })
                                         .addOnFailureListener(new OnFailureListener() {
@@ -228,6 +234,7 @@ public class MainActivity extends AppCompatActivity {
                         .addOnFailureListener(new OnFailureListener() {
                             @Override
                             public void onFailure(@NonNull Exception e) {
+                                waitingDialog.dismiss();
                                 Snackbar.make(rootLayout, "Failed " + e.getMessage(), Snackbar.LENGTH_SHORT).show();
                             }
                         });
@@ -244,15 +251,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        //auth.addAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-//        if (((FirebaseApplication)getApplication()).mAuthListener != null) {
-//            auth.removeAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
-//        }
     }
 }
 

@@ -1,7 +1,7 @@
 package com.example.mudu.warnabruv.Firebase;
 
 public class FirebaseUserEntity {
-    private String uId, email, password, name, phone, country;
+    public String uId, email, password, name, phone, country;
 
     public FirebaseUserEntity(){
     }
