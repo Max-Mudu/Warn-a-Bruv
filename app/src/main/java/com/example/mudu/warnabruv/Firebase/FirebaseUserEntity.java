@@ -1,7 +1,7 @@
 package com.example.mudu.warnabruv.Firebase;
 
 public class FirebaseUserEntity {
-    public String uId, email, password, name, phone, country;
+    public String uId, email, password, name, phone, profileImage;
 
     public FirebaseUserEntity(){
     }
@@ -12,7 +12,7 @@ public class FirebaseUserEntity {
         this.password = password;
         this.name = name;
         this.phone = phone;
-        this.country = country;
+        this.profileImage = profileImage;
     }
 
     public String getuId() {
@@ -55,11 +55,11 @@ public class FirebaseUserEntity {
         this.phone = phone;
     }
 
-    public String getCountry() {
-        return country;
+    public String getProfileImage() {
+        return profileImage;
     }
 
-    public void setCountry(String country) {
-        this.country = country;
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
     }
 }

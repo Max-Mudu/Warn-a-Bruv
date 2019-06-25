@@ -1,51 +1,64 @@
 package com.example.mudu.warnabruv;
 
-import android.Manifest;
+import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.example.mudu.warnabruv.Firebase.FirebaseDatabaseHelper;
-import com.example.mudu.warnabruv.Firebase.FirebaseStorageHelper;
-import com.example.mudu.warnabruv.adapter.RecyclerViewAdapter;
 import com.example.mudu.warnabruv.Helper.Helper;
 import com.example.mudu.warnabruv.Helper.SimpleDividerItemDecoration;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import java.util.List;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import java.io.IOException;
 import java.util.Objects;
+import static android.app.Activity.RESULT_OK;
 
 public class ProfileFragment extends Fragment {
 
     private static final String TAG = ProfileFragment.class.getSimpleName();
     private ImageView profilephoto;
     private TextView profileName;
-    private TextView country;
-    private TextView userStatus;
-    private RecyclerViewAdapter mRecyclerViewAdapter;
     private RecyclerView recyclerView;
-    private List<UserProfile> userProfile;
+    private StorageReference userProfileImageRef;
+    DatabaseReference databaseReference;
     private String id;
     private static final int REQUEST_READ_PERMISSION = 120;
     FirebaseAuth auth;
     FirebaseAuth.AuthStateListener mAuthListener;
-    FirebaseUser currentUser;
+    private String currentUserId;
+    // Root Database Name for Firebase Database.
+    String Database_Path = "All_Image_Uploads_Database";
+    // Folder path for Firebase Storage.
+    String Storage_Path = "All_Image_Uploads/";
+    Uri selectedImageUri;
+
+    ProgressDialog progressDialog;
 
     public ProfileFragment() {
     }
@@ -65,10 +78,15 @@ public class ProfileFragment extends Fragment {
 
         Objects.requireNonNull(getActivity()).setTitle("My Profile");
 
+        currentUserId = auth.getCurrentUser().getUid();
+
         profileName = view.findViewById(R.id.profile_name);
-        country = view.findViewById(R.id.country);
         profileName.setVisibility(View.GONE);
-        country.setVisibility(View.GONE);
+
+        userProfileImageRef = FirebaseStorage.getInstance().getReference();
+        databaseReference = FirebaseDatabase.getInstance().getReference();
+
+        progressDialog = new ProgressDialog(getActivity());
 
         profilephoto = view.findViewById(R.id.circleView);
         profilephoto.setOnClickListener(new View.OnClickListener() {
@@ -76,7 +94,7 @@ public class ProfileFragment extends Fragment {
             public void onClick(View v) {
                 final Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
                 galleryIntent.setType("image/*");
-                startActivityForResult(galleryIntent, Helper.SELECT_PICTURE);
+                startActivityForResult(Intent.createChooser(galleryIntent, "Please select Image"), Helper.SELECT_PICTURE);
             }
         });
 
@@ -87,10 +105,6 @@ public class ProfileFragment extends Fragment {
         recyclerView.addItemDecoration(new
                 SimpleDividerItemDecoration(getActivity()));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
-
-//        userProfile = new ArrayList<>();
-//        mRecyclerViewAdapter =new RecyclerViewAdapter(getActivity(), userProfile);
-//        recyclerView.setAdapter(mRecyclerViewAdapter);
 
         ((FirebaseApplication)getActivity().getApplication()).getFirebaseAuth();
         id = ((FirebaseApplication)getActivity().getApplication()).getFirebaseUserAuthenticatedId();
@@ -104,32 +118,78 @@ public class ProfileFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         System.out.println("user id has entered onActivityResult ");
-        if (requestCode == Helper.SELECT_PICTURE) {
-            if (data != null) {
-                Uri selectedImageUri = data.getData();
-                String imagePath = getPath(selectedImageUri);
-                FirebaseStorageHelper storageHelper = new FirebaseStorageHelper(getActivity());
-
-                if (ActivityCompat.checkSelfPermission(Objects.requireNonNull(getActivity()), Manifest.permission.READ_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_READ_PERMISSION);
-                    return;
-                }
-                storageHelper.saveProfileImageToCloud(id, selectedImageUri, profilephoto);
+        if (requestCode == Helper.SELECT_PICTURE && resultCode == RESULT_OK
+                && data != null && data.getData() != null) {
+            selectedImageUri = data.getData();
+            try {
+                // Getting selected image into Bitmap.
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getApplicationContext().getContentResolver(), selectedImageUri);
+                // Setting up bitmap selected image into ImageView.
+                profilephoto.setImageBitmap(bitmap);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+            uploadImageFileToFirebaseStorage();
         }
     }
 
-    public String getPath(Uri uri) {
-        String[] projection = { MediaStore.Images.Media.DATA };
-        Cursor cursor = Objects.requireNonNull(getActivity()).getContentResolver().query(uri, projection, null, null, null);
-        assert cursor != null;
-        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-        cursor.moveToFirst();
-        int columnIndex = cursor.getColumnIndex(projection[0]);
-        String filePath = cursor.getString(columnIndex);
-        cursor.close();
-        return filePath;
+    // Creating Method to get the selected image file Extension from File Path URI.
+    private String getFileExtension(Uri uri) {
+
+        ContentResolver contentResolver = getActivity().getApplicationContext().getContentResolver();
+
+        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
+
+        // Returning the file Extension.
+        return mimeTypeMap.getExtensionFromMimeType(contentResolver.getType(uri)) ;
+    }
+
+    // Creating UploadImageFileToFirebaseStorage method to upload image on storage.
+    public void uploadImageFileToFirebaseStorage() {
+        // Checking whether selectedImageUri Is empty or not.
+        if (selectedImageUri != null) {
+            progressDialog.setTitle("Image is uploading...");
+            progressDialog.show();
+
+            // Creating second StorageReference.
+            StorageReference storageReference2nd = userProfileImageRef.child(Storage_Path + System.currentTimeMillis()
+                                                            + "." + getFileExtension(selectedImageUri));
+            // Adding addOnSuccessListener to second StorageReference.
+            storageReference2nd.putFile(selectedImageUri)
+                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            // Hiding the progressDialog after done uploading.
+                            progressDialog.dismiss();
+                            Toast.makeText(getActivity().getApplicationContext(), "Image Uploaded Successfully", Toast.LENGTH_LONG).show();
+
+                            ImageUploadInfo imageUploadInfo = new ImageUploadInfo(taskSnapshot.getStorage().getDownloadUrl().toString());
+                            // Adding image upload id s child element into databaseReference.
+                            if (currentUserId != null) {
+                                databaseReference.child("Users").child(currentUserId).push().setValue(imageUploadInfo);
+                            }
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            // Hiding the progressDialog.
+                            progressDialog.dismiss();
+                            // Showing exception error message.
+                            Toast.makeText(getActivity().getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    })
+                    // On progress change upload time.
+                      .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                          @Override
+                          public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                              // Setting progressDialog Title.
+                              progressDialog.setTitle("Image is Uploading...");
+                          }
+                      });
+        } else {
+            Toast.makeText(getActivity().getApplicationContext(), "Please select an Image", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -145,7 +205,7 @@ public class ProfileFragment extends Fragment {
         Log.d(TAG, "setUpFirebaseAuth: Setting up firebase auth.");
 
         auth = FirebaseAuth.getInstance();
-        currentUser = auth.getCurrentUser();
+        final FirebaseUser currentUser = auth.getCurrentUser();
 
         mAuthListener = new FirebaseAuth.AuthStateListener() {
             @Override

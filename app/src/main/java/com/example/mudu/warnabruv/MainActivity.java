@@ -3,10 +3,10 @@ package com.example.mudu.warnabruv;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -53,8 +53,15 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Check the current user
-        auth = ((FirebaseApplication)getApplication()).getFirebaseAuth();
-        ((FirebaseApplication)getApplication()).checkUserLogin(MainActivity.this);
+        auth = FirebaseAuth.getInstance();
+        mAuthListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                if (auth.getCurrentUser() != null) {
+                    startActivity(new Intent(MainActivity.this, Home.class));
+                }
+            }
+        };
 
         db = FirebaseDatabase.getInstance();
         users = db.getReference("Users");
@@ -127,7 +134,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onSuccess(AuthResult authResult) {
                                 waitingDialog.dismiss();
-                                startActivity(new Intent(MainActivity.this, Home.class));
+                                Intent intent = new Intent(MainActivity.this, Home.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 finish();
                             }
                         }).addOnFailureListener(new OnFailureListener() {
@@ -251,11 +259,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        auth.addAuthStateListener(mAuthListener);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        if (mAuthListener != null) {
+            auth.removeAuthStateListener(mAuthListener);
+        }
     }
 }
 

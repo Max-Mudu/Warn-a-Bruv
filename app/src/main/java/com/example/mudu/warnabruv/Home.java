@@ -2,18 +2,18 @@ package com.example.mudu.warnabruv;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentTransaction;
+import androidx.annotation.NonNull;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.fragment.app.FragmentTransaction;
 import android.view.View;
-import android.support.v4.view.GravityCompat;
-import android.support.v7.app.ActionBarDrawerToggle;
+import androidx.core.view.GravityCompat;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import android.view.MenuItem;
-import android.support.design.widget.NavigationView;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import com.google.android.material.navigation.NavigationView;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import android.view.Menu;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -28,17 +28,15 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.support.annotation.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.app.AlertDialog;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.appcompat.app.AlertDialog;
 import android.util.Log;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
@@ -133,7 +131,7 @@ public class Home extends AppCompatActivity
         mAuthListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-                if (auth.getCurrentUser() == null) {
+                if (currentUser == null) {
                     startActivity(new Intent(Home.this, MainActivity.class));
                 }
             }
@@ -162,7 +160,7 @@ public class Home extends AppCompatActivity
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
-        final String user_id = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         // Handle profile image click listener
         navigationView.setNavigationItemSelectedListener(this);
         final View headerView = navigationView.getHeaderView(0);
@@ -176,7 +174,6 @@ public class Home extends AppCompatActivity
             }
         });
 
-        String uid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
         DatabaseReference uidRef = databaseReference.child("Users").child(uid);
         ValueEventListener valueEventListener = new ValueEventListener() {
@@ -200,28 +197,28 @@ public class Home extends AppCompatActivity
 
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
-        try {
-
-            checkPlayServices();
-
-            if (mapFragment != null &&
-                    Objects.requireNonNull(mapFragment.getView()).findViewById(Integer.parseInt("1")) != null) {
-                //Get the button view
-                ImageView locationButton = ((View) Objects.requireNonNull(mapFragment.getView()).findViewById(Integer.parseInt("1"))
-                        .getParent()).findViewById(Integer.parseInt("2"));
-                //Set custom icon
-                locationButton.setBackgroundResource(R.drawable.ic_my_location);
-                //Place it in the bottom right
-                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams)
-                        locationButton.getLayoutParams();
-                layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0);
-                layoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
-                layoutParams.setMargins(0, 0, 30, 30);
-                locationButton.setLayoutParams(layoutParams);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//
+//            checkPlayServices();
+//
+//            if (mapFragment != null &&
+//                    Objects.requireNonNull(mapFragment.getView()).findViewById(Integer.parseInt("1")) != null) {
+//                //Get the button view
+//                ImageView locationButton = ((View) Objects.requireNonNull(mapFragment.getView()).findViewById(Integer.parseInt("1"))
+//                        .getParent()).findViewById(Integer.parseInt("2"));
+//                //Set custom icon
+//                locationButton.setBackgroundResource(R.drawable.ic_my_location);
+//                //Place it in the bottom right
+//                RelativeLayout.LayoutParams layoutParams = (RelativeLayout.LayoutParams)
+//                        locationButton.getLayoutParams();
+//                layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP, 0);
+//                layoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+//                layoutParams.setMargins(0, 0, 30, 30);
+//                locationButton.setLayoutParams(layoutParams);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         //Geo Fire
         drivers = FirebaseDatabase.getInstance().getReference("Drivers");
@@ -251,8 +248,10 @@ public class Home extends AppCompatActivity
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            this.finish();
         }
+        moveTaskToBack(true);
+        super.onBackPressed();
     }
 
     private void loadProfileFragment() {
@@ -277,10 +276,6 @@ public class Home extends AppCompatActivity
         //Closing drawer on item click
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawers();
-    }
-
-    private void retrieveUserInfo() {
-
     }
 
     @Override
@@ -329,9 +324,6 @@ public class Home extends AppCompatActivity
         stopService(new Intent(this, NetworkSchedulerService.class));
         mGoogleApiClient.disconnect();
         super.onStop();
-//        if (((FirebaseApplication)getApplication()).mAuthListener != null) {
-//            auth.removeAuthStateListener(((FirebaseApplication)getApplication()).mAuthListener);
-//        }
     }
 
     @Override
@@ -358,7 +350,7 @@ public class Home extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
-        if (null != mAuthListener) {
+        if (null == mAuthListener) {
             auth.addAuthStateListener(mAuthListener);
         }
         startLocationUpdates();
@@ -386,7 +378,7 @@ public class Home extends AppCompatActivity
                 .make(findViewById(R.id.fab), message, Snackbar.LENGTH_LONG);
 
         View sbView = snackbar.getView();
-        TextView textView = sbView.findViewById(android.support.design.R.id
+        TextView textView = sbView.findViewById(com.google.android.material.R.id
                 .snackbar_text);
         textView.setTextColor(color);
         snackbar.show();
