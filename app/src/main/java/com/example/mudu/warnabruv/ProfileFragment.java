@@ -7,12 +7,15 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,9 +25,13 @@ import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 import com.example.mudu.warnabruv.Firebase.FirebaseDatabaseHelper;
 import com.example.mudu.warnabruv.Helper.Helper;
+import com.example.mudu.warnabruv.Helper.RealPathUtil;
 import com.example.mudu.warnabruv.Helper.SimpleDividerItemDecoration;
+import com.example.mudu.warnabruv.datalayer.SharedPref;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -35,11 +42,14 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+
 import static android.app.Activity.RESULT_OK;
 
-public class ProfileFragment extends Fragment {
+public class ProfileFragment extends Fragment implements OnBackPressed {
 
     private static final String TAG = ProfileFragment.class.getSimpleName();
     private ImageView profilephoto;
@@ -98,6 +108,8 @@ public class ProfileFragment extends Fragment {
             }
         });
 
+        checkAvatarImage();
+
         recyclerView = view.findViewById(R.id.profile_list);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(linearLayoutManager);
@@ -106,12 +118,31 @@ public class ProfileFragment extends Fragment {
                 SimpleDividerItemDecoration(getActivity()));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        ((FirebaseApplication)getActivity().getApplication()).getFirebaseAuth();
-        id = ((FirebaseApplication)getActivity().getApplication()).getFirebaseUserAuthenticatedId();
+        ((FirebaseApplication) getActivity().getApplication()).getFirebaseAuth();
+        id = ((FirebaseApplication) getActivity().getApplication()).getFirebaseUserAuthenticatedId();
 
         FirebaseDatabaseHelper firebaseDatabaseHelper = new FirebaseDatabaseHelper();
         firebaseDatabaseHelper.isUserKeyExist(id, getActivity(), recyclerView);
         return view;
+    }
+
+    private void checkAvatarImage() {
+        String path = SharedPref.getInstance(getContext()).getAvatarPath();
+        if (!path.isEmpty()) {
+            Uri selectedImageUri = FileProvider.getUriForFile(getContext(),
+                    BuildConfig.APPLICATION_ID + ".provider",
+                    new File(path));
+
+            try {
+                // Getting selected image into Bitmap.
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getApplicationContext().getContentResolver(), selectedImageUri);
+                // Setting up bitmap selected image into ImageView.
+                profilephoto.setImageBitmap(bitmap);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+//            Glide.with(this).load(path).into(profileImage);
+        }
     }
 
     @Override
@@ -121,11 +152,21 @@ public class ProfileFragment extends Fragment {
         if (requestCode == Helper.SELECT_PICTURE && resultCode == RESULT_OK
                 && data != null && data.getData() != null) {
             selectedImageUri = data.getData();
+
+            String mediaResumePath = RealPathUtil.getRealPath(getContext(), selectedImageUri);
+
+            if (selectedImageUri != null && selectedImageUri.getPath() != null) {
+                SharedPref.getInstance(getContext()).saveAvatarPath(mediaResumePath);
+            }
             try {
                 // Getting selected image into Bitmap.
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getActivity().getApplicationContext().getContentResolver(), selectedImageUri);
                 // Setting up bitmap selected image into ImageView.
                 profilephoto.setImageBitmap(bitmap);
+
+                if (getActivity() != null) {
+                    ((Home) getActivity()).setProfileAvatar(bitmap);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -141,7 +182,7 @@ public class ProfileFragment extends Fragment {
         MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
 
         // Returning the file Extension.
-        return mimeTypeMap.getExtensionFromMimeType(contentResolver.getType(uri)) ;
+        return mimeTypeMap.getExtensionFromMimeType(contentResolver.getType(uri));
     }
 
     // Creating UploadImageFileToFirebaseStorage method to upload image on storage.
@@ -153,7 +194,7 @@ public class ProfileFragment extends Fragment {
 
             // Creating second StorageReference.
             StorageReference storageReference2nd = userProfileImageRef.child(Storage_Path + System.currentTimeMillis()
-                                                            + "." + getFileExtension(selectedImageUri));
+                    + "." + getFileExtension(selectedImageUri));
             // Adding addOnSuccessListener to second StorageReference.
             storageReference2nd.putFile(selectedImageUri)
                     .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -180,13 +221,13 @@ public class ProfileFragment extends Fragment {
                         }
                     })
                     // On progress change upload time.
-                      .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-                          @Override
-                          public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
-                              // Setting progressDialog Title.
-                              progressDialog.setTitle("Image is Uploading...");
-                          }
-                      });
+                    .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                            // Setting progressDialog Title.
+                            progressDialog.setTitle("Image is Uploading...");
+                        }
+                    });
         } else {
             Toast.makeText(getActivity().getApplicationContext(), "Please select an Image", Toast.LENGTH_LONG).show();
         }
@@ -232,4 +273,14 @@ public class ProfileFragment extends Fragment {
             auth.removeAuthStateListener(mAuthListener);
         }
     }
+
+    @Override
+    public void onBackPressed() {
+        getActivity().getSupportFragmentManager().popBackStack();
+
+    }
+}
+
+interface OnBackPressed {
+    void onBackPressed();
 }

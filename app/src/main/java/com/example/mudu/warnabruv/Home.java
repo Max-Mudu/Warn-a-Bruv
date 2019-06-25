@@ -1,19 +1,34 @@
 package com.example.mudu.warnabruv;
 
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
+
+import com.bumptech.glide.Glide;
+import com.example.mudu.warnabruv.datalayer.SharedPref;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
+
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentTransaction;
+
+import android.provider.MediaStore;
 import android.view.View;
+
 import androidx.core.view.GravityCompat;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+
 import android.view.MenuItem;
+
 import com.google.android.material.navigation.NavigationView;
+
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
 import android.view.Menu;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -28,15 +43,18 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.appcompat.app.AlertDialog;
+
 import android.util.Log;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
+
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
@@ -66,10 +84,17 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
+
 import android.Manifest;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class Home extends AppCompatActivity
@@ -174,6 +199,8 @@ public class Home extends AppCompatActivity
             }
         });
 
+        checkAvatarImage();
+
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
         DatabaseReference uidRef = databaseReference.child("Users").child(uid);
         ValueEventListener valueEventListener = new ValueEventListener() {
@@ -227,7 +254,27 @@ public class Home extends AppCompatActivity
         setUpLocation();
 
         fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.main_container_wrapper, mapFragment).commit();
+        fragmentManager.beginTransaction().replace(R.id.main_container_wrapper, mapFragment).addToBackStack("").commit();
+    }
+
+    private void checkAvatarImage() {
+        String path = SharedPref.getInstance(this).getAvatarPath();
+        if (!path.isEmpty()) {
+            try {
+                Uri selectedImageUri = FileProvider.getUriForFile(Home.this,
+                        BuildConfig.APPLICATION_ID + ".provider",
+                        new File(path));
+
+                // Getting selected image into Bitmap.
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), selectedImageUri);
+                // Setting up bitmap selected image into ImageView.
+                profileImage.setImageBitmap(bitmap);
+            } catch (FileNotFoundException ex) {
+                ex.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void signOut() {
@@ -237,9 +284,13 @@ public class Home extends AppCompatActivity
         finish();
     }
 
+    public void setProfileAvatar(Bitmap bitmap) {
+        profileImage.setImageBitmap(bitmap);
+    }
+
     @SuppressLint("RestrictedApi")
     public void showFloatingButton(boolean flag) {
-        fab.setVisibility(flag ? View.VISIBLE: View.GONE);
+        fab.setVisibility(flag ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -247,11 +298,22 @@ public class Home extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
-            this.finish();
         }
-        moveTaskToBack(true);
+
+        tellFragments();
+
         super.onBackPressed();
+    }
+
+    private void tellFragments(){
+        List<Fragment> fragments = getSupportFragmentManager().getFragments();
+        for(Fragment f : fragments){
+            if(f != null && f instanceof ProfileFragment) {
+                ((ProfileFragment) f).onBackPressed();
+            }else if (f != null && f instanceof SupportMapFragment){
+                finishAffinity();
+            }
+        }
     }
 
     private void loadProfileFragment() {
@@ -333,7 +395,7 @@ public class Home extends AppCompatActivity
         Intent startServiceIntent = new Intent(this, NetworkSchedulerService.class);
         startService(startServiceIntent);
 
-        if (currentUser == null){
+        if (currentUser == null) {
             startActivity(new Intent(Home.this, MainActivity.class));
         }
     }
@@ -636,9 +698,9 @@ public class Home extends AppCompatActivity
             @Override
             public void run() {
                 long elapsed = SystemClock.uptimeMillis() - start;
-                float t = interpolator.getInterpolation((float)elapsed / duration);
+                float t = interpolator.getInterpolation((float) elapsed / duration);
                 float rot = t * i + (1 - t) * startRotation;
-                mCurrent.setRotation(-rot > 180?rot/2:rot);
+                mCurrent.setRotation(-rot > 180 ? rot / 2 : rot);
                 if (t < 1.0) {
                     handler.postDelayed(this, 16);
                 }
