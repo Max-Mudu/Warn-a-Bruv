@@ -12,6 +12,7 @@ import com.example.mudu.warnabruv.datalayer.SharedPref;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -104,6 +105,7 @@ public class Home extends AppCompatActivity
         LocationListener {
 
     private static final String TAG = Home.class.getSimpleName();
+    private static final int MY_PERMISSIONS_REQUEST_READ_CONTACTS = 1002;
 
     private FragmentManager fragmentManager;
     private Fragment fragment = null;
@@ -199,7 +201,26 @@ public class Home extends AppCompatActivity
             }
         });
 
-        checkAvatarImage();
+        // check for permission
+        if (ContextCompat.checkSelfPermission(Home.this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission is not granted
+            if (ActivityCompat.shouldShowRequestPermissionRationale(Home.this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(Home.this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        MY_PERMISSIONS_REQUEST_READ_CONTACTS);
+            }
+        } else {
+            checkAvatarImage();
+        }
 
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
         DatabaseReference uidRef = databaseReference.child("Users").child(uid);
@@ -264,7 +285,6 @@ public class Home extends AppCompatActivity
                 Uri selectedImageUri = FileProvider.getUriForFile(Home.this,
                         BuildConfig.APPLICATION_ID + ".provider",
                         new File(path));
-
                 // Getting selected image into Bitmap.
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getApplicationContext().getContentResolver(), selectedImageUri);
                 // Setting up bitmap selected image into ImageView.
@@ -305,12 +325,12 @@ public class Home extends AppCompatActivity
         super.onBackPressed();
     }
 
-    private void tellFragments(){
+    private void tellFragments() {
         List<Fragment> fragments = getSupportFragmentManager().getFragments();
-        for(Fragment f : fragments){
-            if(f != null && f instanceof ProfileFragment) {
+        for (Fragment f : fragments) {
+            if (f != null && f instanceof ProfileFragment) {
                 ((ProfileFragment) f).onBackPressed();
-            }else if (f != null && f instanceof SupportMapFragment){
+            } else if (f != null && f instanceof SupportMapFragment) {
                 finishAffinity();
             }
         }
@@ -567,6 +587,17 @@ public class Home extends AppCompatActivity
                         displayLocation();
                     }
                 }
+                return;
+
+            case MY_PERMISSIONS_REQUEST_READ_CONTACTS: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    checkAvatarImage();
+                } else {
+                }
+                return;
+            }
         }
     }
 
